@@ -1,39 +1,16 @@
 # dplyr 0.4.3.9000
 
-* `bind_rows()` rejects `POSIXlt` columns (#1875, @krlmlr).
-
-* Internal: Work around bug 16885 regarding `match()` in R 3.3.0 (#1806, #1810,
-  @krlmlr).
-
-* `as_data_frame()` on SQL sources now returns all rows (#1752, #1821,
-  @krlmlr).
-
-* Avoiding segfaults in presence of `raw` columns (#1803, #1817, @krlmlr).
-
-* `all_equal()` shows better error message when comparing raw values
-  or when types are incompatible and `convert = TRUE` (#1820, @krlmlr).
-
-* Fixed bug about joins when factor levels not equal (#1712, #1559).
-
-* anti and semi joins give correct result when by variable is a factor
-  and don't warn (#1571).
-
-* `setdiff()` handles factors with `NA` (#1526).
-
-* enabling joining of data frames that don't have the same encoding of
-  column names (#1513).
-
-* `one_of()` tolerates unknown variables in `vars`, but warns (#1848, @jennybc).
-
 ## Breaking changes
 
 ### Existing functions
 
-* `arrange()` once again ignores grouping (#1206)
+* `arrange()` once again ignores grouping (#1206).
 
 * `distinct()` now only keeps the distinct variables. If you want to return
   all variables (using the first row for non-distinct values) use
-  `.keep_all = TRUE` (#1110). (The default behaviour of using all variables
+  `.keep_all = TRUE` (#1110). For SQL sources, `.keep_all = FALSE` is
+  implemented using `GROUP BY`, and `.keep_all = TRUE` raises an error
+  (#1937, #1942, @krlmlr). (The default behaviour of using all variables
   when none are specified remains - this note only applies if you select
   some variables).
 
@@ -48,8 +25,8 @@
 * The long deprecated `chain()`, `chain_q()` and `%.%` have been removed.
   Please use `%>%` instead.
 
-* `id()` has been deprecated. Please use `group_indices()` instead.
-  (#808)
+* `id()` has been deprecated. Please use `group_indices()` instead
+  (#808).
 
 * `rbind_all()` and `rbind_list()` are formally deprecated. Please use
   `bind_rows()` instead (#803).
@@ -113,6 +90,9 @@ Functions to related to the creation and coercion of `tbl_df`s, now live in thei
   and optionally ignoring minor differences in type (e.g. int vs. double)
   (#821). The test handles the case where the df has 0 columns (#1506).
   The test fails fails when convert is `FALSE` and types don't match (#1484).
+  
+* `all_equal()` shows better error message when comparing raw values
+  or when types are incompatible and `convert = TRUE` (#1820, @krlmlr).
 
 * `add_row()` makes it easy to add a new row to data frame (#1021)
 
@@ -165,6 +145,9 @@ Functions to related to the creation and coercion of `tbl_df`s, now live in thei
   `as.data.frame.table` (@krlmlr, #1374).
 
 ## Remote backends
+
+* `as_data_frame()` on SQL sources now returns all rows (#1752, #1821,
+  @krlmlr).
 
 * `compute()` gets new parameters `indexes` and `unique_indexes` that make
   it easier to add indexes (#1499, @krlmlr).
@@ -242,10 +225,8 @@ If you have written a dplyr backend, you'll need to make some minor changes to y
   provided new methods in your backend, you'll need to rewrite.
 
 * `select_query()` gains a distinct argument which is used for generating
-  queries for `distinct()`. It loses the `offset` and `limits` arguments
-  which are no longer used because cross-database support is patch
-  (because in general it doesn't make sense to think about the order of the
-  rows in a query).
+  queries for `distinct()`. It loses the `offset` argument which was
+  never used (and hence never tested). 
 
 * `src_translate_env()` has been replaced by `sql_translate_env()` which
   should have methods for the connection object.
@@ -263,7 +244,10 @@ There were two other tweaks to the exported API, but these are less likely to af
 
 ### Single table verbs
 
-* `arrange()` fails gracefully on list columns (#1489).
+* Avoiding segfaults in presence of `raw` columns (#1803, #1817, @krlmlr).
+
+* `arrange()` fails gracefully on list columns (#1489) and matrices
+  (#1870, #1945, @krlmlr).
 
 * `count()` now adds additional grouping variables, rather than overriding
   existing (#1703). `tally()` and `count()` can now count a variable
@@ -302,6 +286,8 @@ There were two other tweaks to the exported API, but these are less likely to af
   (#1641). `mutate()` on a grouped data no longer droups grouping attributes
   (#1120). `rowwise()` mutate gives expected results (#1381).
 
+* `one_of()` tolerates unknown variables in `vars`, but warns (#1848, @jennybc).
+
 * `print.grouped_df()` passes on `...` to `print()` (#1893).
 
 * `slice()` correctly handles grouped attributes (#1405).
@@ -309,7 +295,6 @@ There were two other tweaks to the exported API, but these are less likely to af
 * `ungroup()` generic gains `...` (#922).
 
 ### Dual table verbs
-
 * `bind_cols()` matches the behaviour of `bind_rows()` and ignores `NULL`
   inputs (#1148). It also handles `POSIXct`s with integer base type (#1402).
 
@@ -317,6 +302,8 @@ There were two other tweaks to the exported API, but these are less likely to af
   characters (#1538), and warns when binding factor and character (#1485).
   bind_rows()` is more flexible in the way it can accept data frames,
   lists, list of data frames, and list of lists (#1389).
+
+* `bind_rows()` rejects `POSIXlt` columns (#1875, @krlmlr).
 
 * Both `bind_cols()` and `bind_rows()` infer classes and grouping information
   from the first data frame (#1692).
@@ -330,14 +317,21 @@ There were two other tweaks to the exported API, but these are less likely to af
   that is empty (#1496), or has duplicates (#1192). Suffixes grow progressively
   to avoid creating repeated column names (#1460).  Joins on string columns
   should be substantially faster (#1386). Extra attributes are ok if they are
-  identical (#1636)
+  identical (#1636). Joins work correct when factor levels not equal 
+  (#1712, #1559), and anti and semi joins give correct result when by variable is a 
+  factor (#1571).
 
 * `inner_join()`, `left_join()`, `right_join()`, and `full_join()` gain a
   `suffix` argument which allows you to control what suffix duplicated variable
   names recieve (#1296).
 
 * Set operations (`intersect()`, `union()` etc) respect coercion rules
-  (#799).
+  (#799). `setdiff()` handles factors with `NA` levels (#1526).
+
+* There were a number of fixes to enable joining of data frames that don't 
+  have the same encoding of column names (#1513), including working around 
+  bug 16885 regarding `match()` in R 3.3.0 (#1806, #1810,
+  @krlmlr).
 
 ### Vector functions
 
