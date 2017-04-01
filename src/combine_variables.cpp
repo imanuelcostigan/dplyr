@@ -37,7 +37,7 @@ class VarList {
   }
 
 public:
-  VarList(int n) : out_indx(), out_name() {
+  explicit VarList(int n) : out_indx(), out_name() {
     out_indx.reserve(n);
     out_name.reserve(n);
   }
@@ -85,9 +85,9 @@ SEXP combine_vars(CharacterVector vars, ListOf<IntegerVector> xs) {
   SEXP raw_names = Rf_getAttrib(xs, Rf_mkString("names"));
   CharacterVector xs_names;
   if (raw_names == R_NilValue) {
-    xs_names = CharacterVector(xs.size(), "" );
+    xs_names = CharacterVector(xs.size(), "");
   } else {
-    xs_names = raw_names ;
+    xs_names = raw_names;
   }
 
   // If first component is negative, pre-fill with existing vars
@@ -121,7 +121,7 @@ SEXP combine_vars(CharacterVector vars, ListOf<IntegerVector> xs) {
           }
         }
       } else if (has_names) {
-        CharacterVector names = x.names() ;
+        CharacterVector names = x.names();
         for (int j = 0; j < x.size(); ++j) {
           selected.update(x[j], names[j]);
         }

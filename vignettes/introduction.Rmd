@@ -233,7 +233,7 @@ These five functions provide the basis of a language of data manipulation. At th
 
 # Grouped operations
 
-These verbs are useful on their own, but they become really powerful when you apply them to groups of observations within a dataset. In dplyr, you do this by with the `group_by()` function. It breaks down a dataset into specified groups of rows. When you then apply the verbs above on the resulting object they'll be automatically applied "by group". Most importantly, all this is achieved by using the same exact syntax you'd use with an ungrouped object.
+These verbs are useful on their own, but they become really powerful when you apply them to groups of observations within a dataset. In dplyr, you do this with the `group_by()` function. It breaks down a dataset into specified groups of rows. When you then apply the verbs above on the resulting object they'll be automatically applied "by group". Most importantly, all this is achieved by using the same exact syntax you'd use with an ungrouped object.
 
 Grouping affects the verbs as follows:
 
@@ -368,13 +368,7 @@ The advantages of using dplyr with data tables are:
 
 ## Databases
 
-dplyr also allows you to use the same verbs with a remote database. It takes care of generating the SQL for you so that you can avoid the cognitive challenge of constantly switching between languages. See the databases vignette for more details.
-
-Compared to DBI and the database connection algorithms:
-
-* it hides, as much as possible, the fact that you're working with a remote database
-* you don't need to know any SQL (although it helps!)
-* it abstracts over the many differences between the different DBI implementations
+dplyr also allows you to use the same verbs with a remote database. It takes care of generating the SQL for you so that you can avoid the cognitive challenge of constantly switching between languages. To use these capabilities, you'll need to install the dbplyr package and then read `vignette("dbplyr")` for the details.
 
 ## Multidimensional arrays / cubes
 

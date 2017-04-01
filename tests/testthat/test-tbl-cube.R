@@ -1,11 +1,11 @@
 context("tbl_cube")
 
 test_that("coercion", {
-  grid <- expand.grid(x=letters[1:3], y=letters[1:5], stringsAsFactors = FALSE)
-  tbl <- table(x=grid$x, y=grid$y)
+  grid <- expand.grid(x = letters[1:3], y = letters[1:5], stringsAsFactors = FALSE)
+  tbl <- table(x = grid$x, y = grid$y)
   tbl_as_df <- as.data.frame(tbl, stringsAsFactors = FALSE)
   expect_message(cube <- as.tbl_cube(tbl_as_df), "Using Freq as")
-  expect_identical(cube$dims, list(x=letters[1:3], y=letters[1:5]))
+  expect_identical(cube$dims, list(x = letters[1:3], y = letters[1:5]))
   expect_identical(names(cube$mets), "Freq")
 
   expect_message(cube_met <- as.tbl_cube(tbl_as_df, met_name = "Freq"), NA)
@@ -19,10 +19,11 @@ test_that("coercion", {
 })
 
 test_that("incomplete", {
-  d <- rbind(cbind(data_frame(s=1), expand.grid(j=1)),
-             cbind(data_frame(s=2), expand.grid(j=1:2)))
+  d <- rbind(
+    cbind(data.frame(s = 1), expand.grid(j = 1)),
+    cbind(data.frame(s = 2), expand.grid(j = 1:2))
+  )
   d$value <- 1:3
-  d <- as_data_frame(d)
 
   cube <- as.tbl_cube(d, met_name = "value")
   expect_true(is.na(as.data.frame(filter(cube, s == 1, j == 2))[["value"]]))
@@ -30,8 +31,10 @@ test_that("incomplete", {
 })
 
 test_that("duplicate", {
-  d <- rbind(cbind(data_frame(s=1), expand.grid(j=c(1, 1))),
-             cbind(data_frame(s=2), expand.grid(j=1:2)))
+  d <- rbind(
+    cbind(data.frame(s = 1), expand.grid(j = c(1, 1))),
+    cbind(data.frame(s = 2), expand.grid(j = 1:2))
+  )
   d$value <- 1:4
 
   expect_error(as.tbl_cube(d, met_name = "value"), "Duplicate.*s = 1, j = 1")
@@ -50,8 +53,10 @@ test_that("summarise works with single group", {
 test_that("can coerce to data_frame", {
   slice <- filter(nasa, year == 1995L, month == 1L)
 
-  expect_identical(tbl_df(as.data.frame(slice, stringsAsFactors = FALSE)),
-                   as_data_frame(slice))
+  expect_identical(
+    tbl_df(as.data.frame(slice, stringsAsFactors = FALSE)),
+    as_data_frame(slice)
+  )
 })
 
 test_that("can coerce to table", {
@@ -60,4 +65,9 @@ test_that("can coerce to table", {
   expect_equal(dimnames(as.table(nasa)), lapply(nasa$dims, as.character))
   expect_equal(as.vector(as.table(nasa)), as.vector(nasa$mets[[1]]))
   expect_identical(as.table(nasa, measure = "ozone"), as.table(select(nasa, ozone)))
+})
+
+test_that("group_vars() returns variables", {
+  gcube <- group_by(nasa, month)
+  expect_identical(group_vars(gcube), "month")
 })

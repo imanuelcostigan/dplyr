@@ -14,7 +14,7 @@ seconds have elapsed before displaying any results.}
 }
 \value{
 A ref class with methods \code{tick()}, \code{print()},
-  \code{pause()}, and \code{stop()}.
+\code{pause()}, and \code{stop()}.
 }
 \description{
 This reference class represents a text progress bar displayed estimated
@@ -46,4 +46,3 @@ for (i in 1:10) p$pause(0.5)$tick()$print()
 }
 }
 \keyword{internal}
-

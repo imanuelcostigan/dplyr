@@ -1,33 +1,38 @@
 #' Efficiently bind multiple data frames by row and column.
 #'
 #' This is an efficient implementation of the common pattern of
-#' \code{do.call(rbind, dfs)} or \code{do.call(cbind, dfs)} for binding many
-#' data frames into one. \code{combine()} acts like \code{\link{c}()} or
-#' \code{\link{unlist}()} but uses consistent dplyr coercion rules.
+#' `do.call(rbind, dfs)` or `do.call(cbind, dfs)` for binding many
+#' data frames into one. `combine()` acts like [c()] or
+#' [unlist()] but uses consistent dplyr coercion rules.
+#'
+#' The output of `bind_rows()` will contain a column if that column
+#' appears in any of the inputs.
 #'
 #' @section Deprecated functions:
-#' \code{rbind_list()} and \code{rbind_all()} have been deprecated. Instead use
-#' \code{bind_rows()}.
+#' `rbind_list()` and `rbind_all()` have been deprecated. Instead use
+#' `bind_rows()`.
 #'
 #' @param ... Data frames to combine.
 #'
 #'   Each argument can either be a data frame, a list that could be a data
 #'   frame, or a list of data frames.
 #'
-#'   When column-binding, rows are matched by position, not value so all data
-#'   frames must have the same number of rows. To match by value, not
-#'   position, see \code{left_join} etc. When row-binding, columns are
-#'   matched by name, and any values that don't match will be filled with NA.
-#' @param .id Data frames identifier.
+#'   When row-binding, columns are matched by name, and any missing
+#'   columns with be filled with NA.
 #'
-#'   When \code{.id} is supplied, a new column of identifiers is
+#'   When column-binding, rows are matched by position, so all data
+#'   frames must have the same number of rows. To match by value, not
+#'   position, see [join].
+#' @param .id Data frame identifier.
+#'
+#'   When `.id` is supplied, a new column of identifiers is
 #'   created to link each row to its original data frame. The labels
-#'   are taken from the named arguments to \code{bind_rows()}. When a
+#'   are taken from the named arguments to `bind_rows()`. When a
 #'   list of data frames is supplied, the labels are taken from the
 #'   names of the list. If no names are found a numeric sequence is
 #'   used instead.
-#' @return \code{bind_rows} and \code{bind_cols} return the same type as
-#'   the first input, either a data frame, \code{tbl_df}, or \code{grouped_df}.
+#' @return `bind_rows()` and `bind_cols()` return the same type as
+#'   the first input, either a data frame, `tbl_df`, or `grouped_df`.
 #' @aliases rbind_all rbind_list
 #' @examples
 #' one <- mtcars[1:4, ]
@@ -81,12 +86,23 @@ bind_rows <- function(..., .id = NULL) {
   bind_rows_(x, .id)
 }
 
+#' @export
+rbind.tbl_df <- function(..., deparse.level = 1) {
+  bind_rows(...)
+}
 
 #' @export
 #' @rdname bind
 bind_cols <- function(...) {
   x <- list_or_dots(...)
-  cbind_all(x)
+
+  out <- cbind_all(x)
+  tibble::repair_names(out)
+}
+
+#' @export
+cbind.tbl_df <- function(..., deparse.level = 1) {
+  bind_cols(...)
 }
 
 #' @export
@@ -121,11 +137,11 @@ is_data_list <- function(x) {
     return(FALSE)
 
   # 0 length named list (#1515)
-  if( !is.null(names(x)) && length(x) == 0)
+  if (!is.null(names(x)) && length(x) == 0)
     return(TRUE)
 
   # With names
-  if (any(!has_names(x)))
+  if (any(!have_name(x)))
     return(FALSE)
 
   # Where each element is an 1d vector or list
@@ -147,9 +163,11 @@ is_data_list <- function(x) {
 #' @export
 #' @rdname bind
 #' @usage NULL
-rbind_list <- function(...){
-  warning("`rbind_list()` is deprecated. Please use `bind_rows()` instead.",
-    call. = FALSE)
+rbind_list <- function(...) {
+  warning(
+    "`rbind_list()` is deprecated. Please use `bind_rows()` instead.",
+    call. = FALSE
+  )
   rbind_list__impl(environment())
 }
 
@@ -157,7 +175,9 @@ rbind_list <- function(...){
 #' @rdname bind
 #' @usage NULL
 rbind_all <- function(x, id = NULL) {
-  warning("`rbind_all()` is deprecated. Please use `bind_rows()` instead.",
-    call. = FALSE)
+  warning(
+    "`rbind_all()` is deprecated. Please use `bind_rows()` instead.",
+    call. = FALSE
+  )
   bind_rows_(x, id = id)
 }

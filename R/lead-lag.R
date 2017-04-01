@@ -1,12 +1,12 @@
 #' Lead and lag.
 #'
-#' Lead and lag are useful for comparing values offset by a constant (e.g. the
-#' previous or next value)
+#' Find the "next" or "previous" values in a vector. Useful for comparing values
+#' ahead of or behind the current values.
 #'
 #' @param x a vector of values
 #' @param n a postive integer of length 1, giving the number of positions to
 #'   lead or lag by
-#' @param default value used for non-existant rows. Defaults to \code{NA}.
+#' @param default value used for non-existant rows. Defaults to `NA`.
 #' @param order_by override the default ordering to use another vector
 #' @param ... Needed for compatibility with lag generic.
 #' @importFrom stats lag
@@ -55,6 +55,13 @@ lead <- function(x, n = 1L, default = NA, order_by = NULL, ...) {
 lag <- function(x, n = 1L, default = NA, order_by = NULL, ...) {
   if (!is.null(order_by)) {
     return(with_order(order_by, lag, x, n = n, default = default))
+  }
+
+  if (inherits(x, "ts")) {
+    stop(
+      "dplyr::lag() called with ts object. Do you want stats::lag()?",
+      call. = FALSE
+    )
   }
 
   if (n == 0) return(x)

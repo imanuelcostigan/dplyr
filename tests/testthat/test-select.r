@@ -1,18 +1,10 @@
 context("Select")
 
-df <- as.data.frame(as.list(setNames(1:26, letters)))
-tbls <- test_load(df)
-
-test_that("two selects equivalent to one", {
-  compare_tbls(tbls, function(tbl) tbl %>% select(l:s) %>% select(n:o),
-    ref = select(df, n:o))
-})
-
 test_that("select does not lose grouping (#147)", {
-  df <- tbl_df(data.frame(a = rep(1:4, 2), b = rep(1:4, each = 2), x = runif(8)))
+  df <- tibble(a = rep(1:4, 2), b = rep(1:4, each = 2), x = runif(8))
   grouped <- df %>% group_by(a) %>% select(a, b, x)
 
-  expect_equal(groups(grouped), list(quote(a)))
+  expect_groups(grouped, "a")
 })
 
 test_that("grouping variables preserved with a message (#1511)", {
@@ -36,6 +28,7 @@ test_that("select doesn't fail if some names missing", {
   expect_equal(select(df2, x), data.frame(x = 1:10))
   # expect_equal(select(df3, x), data.frame(x = 1:10))
 })
+
 
 # Empty selects -------------------------------------------------
 
@@ -72,44 +65,38 @@ test_that("last rename wins", {
 test_that("negative index removes values", {
   vars <- letters[1:3]
 
-  expect_equal(select_vars(vars, -c), c("a" = "a", "b" = "b"))
-  expect_equal(select_vars(vars, a:c, -c), c("a" = "a", "b" = "b"))
-  expect_equal(select_vars(vars, a, b, c, -c), c("a" = "a", "b" = "b"))
-  expect_equal(select_vars(vars, -c, a, b), c("a" = "a", "b" = "b"))
+  expect_equal(select_vars(vars, -c), c(a = "a", b = "b"))
+  expect_equal(select_vars(vars, a:c, -c), c(a = "a", b = "b"))
+  expect_equal(select_vars(vars, a, b, c, -c), c(a = "a", b = "b"))
+  expect_equal(select_vars(vars, -c, a, b), c(a = "a", b = "b"))
 })
 
-test_that("select can be before group_by (#309)",{
-  df <- data.frame(id=c(1,1,2,2,2,3,3,4,4,5), year=c(2013,2013,2012,2013,2013,2013,2012,2012,2013,2013), var1=rnorm(10))
+test_that("select can be before group_by (#309)", {
+  df <- data.frame(
+    id = c(1, 1, 2, 2, 2, 3, 3, 4, 4, 5),
+    year = c(2013, 2013, 2012, 2013, 2013, 2013, 2012, 2012, 2013, 2013),
+    var1 = rnorm(10)
+  )
   dfagg <- df %>%
     group_by(id, year) %>%
     select(id, year, var1) %>%
-    summarise(var1=mean(var1))
+    summarise(var1 = mean(var1))
   expect_equal(names(dfagg), c("id", "year", "var1"))
-  expect_equal(attr(dfagg, "vars" ), list(quote(id)))
+  expect_equal(attr(dfagg, "vars"), "id")
 
 })
 
-# Database ---------------------------------------------------------------------
-
-test_that("select renames variables (#317)", {
-  skip_if_no_sqlite()
-
-  first <- tbls$sqlite %>% select(A = a)
-  expect_equal(tbl_vars(first), "A")
-  expect_equal(tbl_vars(first %>% select(A)), "A")
-  expect_equal(tbl_vars(first %>% select(B = A)), "B")
-})
-
-test_that("select preserves grouping vars", {
-  skip_if_no_sqlite()
-
-  first <- tbls$sqlite %>% group_by(b) %>% select(a)
-  expect_equal(tbl_vars(first), c("b", "a"))
-})
-
-test_that("rename handles grouped data (#640)", {
-  res <- data_frame(a = 1, b = 2) %>% group_by(a) %>% rename(c = b)
-  expect_equal(names(res), c("a", "c"))
+test_that("rename does not crash with invalid grouped data frame (#640)", {
+  df <- data_frame(a = 1:3, b = 2:4, d = 3:5) %>% group_by(a, b)
+  df$a <- NULL
+  expect_equal(
+    df %>% rename(e = d) %>% ungroup,
+    data_frame(b = 2:4, e = 3:5)
+  )
+  expect_equal(
+    df %>% rename(e = b) %>% ungroup,
+    data_frame(e = 2:4, d = 3:5)
+  )
 })
 
 # combine_vars ------------------------------------------------------------
@@ -164,17 +151,4 @@ test_that("select succeeds in presence of raw columns (#1803)", {
   expect_identical(select(df, a), df["a"])
   expect_identical(select(df, b), df["b"])
   expect_identical(select(df, -b), df["a"])
-})
-
-test_that("select_if can use predicate", {
-  expect_identical(iris %>% select_if(is.factor), iris["Species"])
-})
-
-test_that("select_if fails with databases", {
-  expect_error(memdb_frame(x = 1) %>% select_if(is.numeric) %>% collect())
-})
-
-test_that("select_if keeps grouping cols", {
-  expect_silent(df <- iris %>% group_by(Species) %>% select_if(is.numeric))
-  expect_equal(df, tbl_df(iris[c(5, 1:4)]))
 })

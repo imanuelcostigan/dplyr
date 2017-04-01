@@ -1,14 +1,14 @@
 #' Select distinct/unique rows.
 #'
 #' Retain only unique/distinct rows from an input tbl. This is similar
-#' to \code{\link{unique.data.frame}}, but considerably faster.
+#' to [unique.data.frame()], but considerably faster.
 #'
 #' @param .data a tbl
 #' @param ... Optional variables to use when determining uniqueness. If there
 #'   are multiple rows for a given combination of inputs, only the first
 #'   row will be preserved. If omitted, will use all variables.
-#' @param .keep_all If \code{TRUE}, keep all variables in \code{.data}.
-#'   If a combination of \code{...} is not distinct, this keeps the
+#' @param .keep_all If `TRUE`, keep all variables in `.data`.
+#'   If a combination of `...` is not distinct, this keeps the
 #'   first row of values.
 #' @inheritParams filter
 #' @export
@@ -31,11 +31,11 @@
 #' # You can also use distinct on computed variables
 #' distinct(df, diff = abs(x - y))
 distinct <- function(.data, ..., .keep_all = FALSE) {
-  distinct_(.data, .dots = lazyeval::lazy_dots(...), .keep_all = .keep_all)
+  UseMethod("distinct")
 }
-
 #' @export
-#' @rdname distinct
+#' @rdname se-deprecated
+#' @inheritParams distinct
 distinct_ <- function(.data, ..., .dots, .keep_all = FALSE) {
   UseMethod("distinct_")
 }
@@ -44,7 +44,7 @@ distinct_ <- function(.data, ..., .dots, .keep_all = FALSE) {
 #' vars (character vector) comes out.
 #' @noRd
 distinct_vars <- function(.data, ..., .dots, .keep_all = FALSE) {
-  dots <- lazyeval::all_dots(.dots, ..., all_named = TRUE)
+  dots <- quos(..., .named = TRUE)
 
   # If no input, keep all variables
   if (length(dots) == 0) {
@@ -52,9 +52,9 @@ distinct_vars <- function(.data, ..., .dots, .keep_all = FALSE) {
   }
 
   # If any calls, use mutate to add new columns, then distinct on those
-  needs_mutate <- vapply(dots, function(x) !is.name(x$expr), logical(1))
+  needs_mutate <- map_lgl(dots, is_lang)
   if (any(needs_mutate)) {
-    .data <- mutate_(.data, .dots = dots[needs_mutate])
+    .data <- mutate(.data, !!! dots[needs_mutate])
   }
 
   # Once we've done the mutate, we no longer need lazy objects, and
@@ -64,7 +64,7 @@ distinct_vars <- function(.data, ..., .dots, .keep_all = FALSE) {
   if (.keep_all) {
     keep <- names(.data)
   } else {
-    keep <- vars
+    keep <- unique(vars)
   }
 
   list(data = .data, vars = vars, keep = keep)
@@ -72,15 +72,15 @@ distinct_vars <- function(.data, ..., .dots, .keep_all = FALSE) {
 
 #' Efficiently count the number of unique values in a set of vector
 #'
-#' This is a faster and more concise equivalent of \code{length(unique(x))}
+#' This is a faster and more concise equivalent of `length(unique(x))`
 #'
 #' @param \dots vectors of values
-#' @param na.rm id \code{TRUE} missing values don't count
+#' @param na.rm id `TRUE` missing values don't count
 #' @examples
 #' x <- sample(1:10, 1e5, rep = TRUE)
 #' length(unique(x))
 #' n_distinct(x)
 #' @export
-n_distinct <- function(..., na.rm = FALSE){
+n_distinct <- function(..., na.rm = FALSE) {
   n_distinct_multi(list(...), na.rm)
 }

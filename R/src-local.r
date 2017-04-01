@@ -3,10 +3,10 @@
 #' This is mainly useful for testing, since makes it possible to refer to
 #' local and remote tables using exactly the same syntax.
 #'
-#' Generally, \code{src_local} should not be called directly, but instead
+#' Generally, `src_local()` should not be called directly, but instead
 #' one of the constructors should be used.
 #'
-#' @param tbl name of the function used to generate \code{tbl} objects
+#' @param tbl name of the function used to generate `tbl` objects
 #' @param pkg,env Either the name of a package or an environment object in
 #'   which to look for objects.
 #' @keywords internal
@@ -23,6 +23,7 @@ src_local <- function(tbl, pkg = NULL, env = NULL) {
     env <- getNamespaceInfo(pkg, "lazydata")
     name <- paste0("<package: ", pkg, ">")
   } else {
+    stopifnot(is.environment(env))
     name <- utils::capture.output(print(env))
   }
 
@@ -50,13 +51,25 @@ tbl.src_local <- function(src, from, ...) {
 }
 
 #' @export
-copy_to.src_local <- function(dest, df, name = deparse(substitute(df)), ...) {
+copy_to.src_local <- function(dest, df, name = deparse(substitute(df)),
+                              overwrite = FALSE, ...) {
+
+  if (!overwrite && exists(name, envir = dest$env, inherits = FALSE)) {
+    stop(
+      "Object with name `", name, "` already exists.\n",
+      "Set overwrite = TRUE to overwrite",
+      call. = FALSE
+    )
+  }
+
   assign(name, envir = dest$env, df)
   tbl(dest, name)
 }
 
 #' @export
 format.src_local <- function(x, ...) {
-  paste0("src:  ", x$name, "\n",
-    wrap("tbls: ", paste0(sort(src_tbls(x)), collapse = ", ")))
+  paste0(
+    "src:  ", x$name, "\n",
+    wrap("tbls: ", paste0(sort(src_tbls(x)), collapse = ", "))
+  )
 }
